@@ -181,11 +181,13 @@ def load_dataset():
 def random_crop_sample(
         sample,
         tokenizer,
-        max_tokens=512
+        max_tokens=512,
+        seed=None
 ):
 
-    text = sample["text"]
+    rng = random.Random(seed)
 
+    text = sample["text"]
 
     encoded = tokenizer(
         text,
@@ -193,49 +195,32 @@ def random_crop_sample(
         return_offsets_mapping=True
     )
 
-
     offsets = encoded["offset_mapping"]
-
 
     if len(offsets) <= max_tokens:
         return sample
 
-
-
-    start_token = random.randint(
+    start_token = rng.randint(
         0,
-        len(offsets)-max_tokens
+        len(offsets) - max_tokens
     )
 
-
-    end_token = (
-        start_token
-        +
-        max_tokens
-        -
-        1
-    )
-
+    end_token = start_token + max_tokens - 1
 
     char_start = offsets[start_token][0]
-
     char_end = offsets[end_token][1]
-
 
     crop_text = text[
         char_start:char_end
     ]
 
-
-    crop_entities=[]
-
+    crop_entities = []
 
     for ent in sample["entities"]:
 
+        s, e = ent["position"]
 
-        s,e = ent["position"]
-
-
+        # Chỉ giữ entity nằm hoàn toàn trong đoạn crop
         if (
             s >= char_start
             and
@@ -245,14 +230,11 @@ def random_crop_sample(
             new_ent = ent.copy()
 
             new_ent["position"] = [
-                s-char_start,
-                e-char_start
+                s - char_start,
+                e - char_start
             ]
 
-            crop_entities.append(
-                new_ent
-            )
-
+            crop_entities.append(new_ent)
 
     return {
         "id": sample["id"],
