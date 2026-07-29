@@ -36,7 +36,7 @@ OUTPUT_DIR = os.path.join(
 MODEL_NAME = "Qwen/Qwen3-8B"
 
 
-NUM_GENERATE = 1000
+NUM_GENERATE = 8
 
 BATCH_SIZE = 8
 
