@@ -36,15 +36,15 @@ OUTPUT_DIR = os.path.join(
 MODEL_NAME = "Qwen/Qwen3-8B"
 
 
-NUM_GENERATE = 2000
+NUM_GENERATE = 1000
 
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 
 FEWSHOT_K = 3
 
 FEWSHOT_MAX_TOKEN = 512
 
-MAX_NEW_TOKENS = 1024
+MAX_NEW_TOKENS = 512
 
 
 SEED = 42
@@ -551,6 +551,11 @@ def load_model():
         MODEL_NAME,
         trust_remote_code=True
     )
+
+    tokenizer.padding_side = "left"
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
 
     config=BitsAndBytesConfig(
