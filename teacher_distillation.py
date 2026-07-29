@@ -76,7 +76,28 @@ REVERSE_MAPPING = {
     for k,v in NER_MAPPING.items()
 }
 
+def has_overlap(entities):
+    """
+    Return True nếu có entity chồng lấp.
+    """
 
+    entities = sorted(
+        entities,
+        key=lambda x: x["position"][0]
+    )
+
+    last_end = -1
+
+    for ent in entities:
+
+        s, e = ent["position"]
+
+        if s < last_end:
+            return True
+
+        last_end = max(last_end, e)
+
+    return False
 
 # ==========================================================
 # LOAD DATASET
@@ -400,50 +421,63 @@ def extract_ner_tags(text):
 
 def build_fewshot_examples(
         samples,
-        tokenizer
+        tokenizer,
+        max_retry=100
 ):
 
+    examples = []
 
-    chosen=random.sample(
-        samples[:100],
-        FEWSHOT_K
-    )
+    used = set()
 
+    while len(examples) < FEWSHOT_K:
 
-    examples=[]
+        if len(used) >= min(100, len(samples)):
+            raise RuntimeError(
+                "Không đủ sample hợp lệ để build fewshot."
+            )
 
+        idx = random.randrange(
+            min(100, len(samples))
+        )
 
-    for i,s in enumerate(
-        chosen,
-        1
-    ):
+        if idx in used:
+            continue
 
+        used.add(idx)
 
-        crop=random_crop_sample(
-            s,
+        sample = samples[idx]
+
+        crop = random_crop_sample(
+            sample,
             tokenizer,
-            FEWSHOT_MAX_TOKEN
+            max_tokens=512,
+            seed=random.randint(0, 1_000_000)
         )
 
+        # --------------------------------------------------
+        # Skip overlap
+        # --------------------------------------------------
+        if has_overlap(
+            crop["entities"]
+        ):
+            continue
 
-        tagged=insert_ner_tags(
-            crop
-        )
-
+        try:
+            tagged = insert_ner_tags(
+                crop
+            )
+        except Exception:
+            continue
 
         examples.append(
             f"""
-### Example {i}
+### Example {len(examples)+1}
 
 {tagged}
 """
         )
 
-
-    return "\n\n".join(
-        examples
-    )
-
+    return "\n\n".join(examples)
 
 
 # ==========================================================
