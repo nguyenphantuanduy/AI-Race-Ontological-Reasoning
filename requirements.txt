@@ -1,0 +1,7 @@
+gdown
+torch
+transformers
+bitsandbytes
+accelerate
+sentencepiece
+tqdm
